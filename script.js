@@ -3,6 +3,7 @@
 (function (window, undefined) {
     'use strict';
     var about,
+        cancelEdit = false,
         collectionView,
         content,
         currentNote = 0,
@@ -27,6 +28,7 @@
             }
             break;
         case PAGE_EDIT:
+            cancelEdit = true;
             window.history.back();
             break;
         case PAGE_VIEW:
@@ -45,22 +47,7 @@
             currentNote = notes.length;
             break;
         case PAGE_EDIT:
-            if (currentNote < notes.length) {
-                if (editTextarea.value.length > 0) {
-                    notes[currentNote] = editTextarea.value;
-                    window.history.back();
-                } else if (window.confirm('Delete this note?')) {
-                    notes.splice(currentNote, 1);
-                    window.history.go(-2);
-                }
-            } else if (editTextarea.value.length > 0) {
-                notes.push(editTextarea.value);
-                window.history.back();
-                setTimeout(function () {
-                    window.location.hash = 'view';
-                }, 10);
-            }
-            localStorage.setItem('data', JSON.stringify(notes));
+            window.history.back();
             break;
         case PAGE_VIEW:
             window.location.hash = 'edit';
@@ -118,18 +105,35 @@
             content.style.display = 'none';
             editContainer.style.display = '';
 
-            leftBarButton.title = 'Back';
-            leftBarButton.style.backgroundImage = 'url("images/ic_arrow_back_white_24px.svg")';
+            leftBarButton.title = 'Cancel';
+            leftBarButton.style.backgroundImage = 'url("images/ic_cancel_white_24px.svg")';
             rightBarButton.title = 'Done';
             rightBarButton.style.backgroundImage = 'url("images/ic_done_white_24px.svg")';
 
             editTextarea.focus();
             break;
         case '#view':
-            if (currentPage === PAGE_EDIT && notes[currentNote].length > 0 && notes[currentNote].length !== editTextarea.value.length) {
-                if (!window.confirm('Exit without save?')) {
-                    window.location.hash = 'edit';
-                    return;
+            if (currentPage === PAGE_EDIT) {
+                if (cancelEdit) {
+                    cancelEdit = false;
+                    if (notes[currentNote].length !== editTextarea.value.length) {
+                        if (!window.confirm('Exit without save?')) {
+                            window.location.hash = 'edit';
+                            return;
+                        }
+                    }
+                } else {
+                    if (editTextarea.value.length > 0) {
+                        notes.splice(currentNote, 1);
+                        notes.unshift(editTextarea.value);
+                        currentNote = 0;
+                        localStorage.setItem('data', JSON.stringify(notes));
+                    } else if (window.confirm('Delete this note?')) {
+                        notes.splice(currentNote, 1);
+                        localStorage.setItem('data', JSON.stringify(notes));
+                        window.history.back();
+                        return;
+                    }
                 }
             }
             if (currentNote < notes.length && notes[currentNote].length > 0) {
@@ -149,6 +153,20 @@
             rightBarButton.style.backgroundImage = 'url("images/ic_edit_white_24px.svg")';
             break;
         default:
+            if (currentPage === PAGE_EDIT) {
+                if (cancelEdit) {
+                    cancelEdit = false;
+                    if (!window.confirm('Exit without save?')) {
+                        window.location.hash = 'edit';
+                        return;
+                    }
+                } else if (editTextarea.value.length > 0) {
+                    notes.unshift(editTextarea.value);
+                    currentNote = 0;
+                    localStorage.setItem('data', JSON.stringify(notes));
+                    window.location.hash = 'view';
+                }
+            }
             currentPage = PAGE_HOME;
             about.style.display = 'none';
             collectionView.style.display = '';
