@@ -2,7 +2,7 @@
 /*jslint es5: true*/
 (function (self, undefined) {
     'use strict';
-    var CACHE_VERSION = '1.0.1',
+    var CACHE_VERSION = '1.0.2',
         cachePaths = [
             './',
             './style.css',
@@ -11,8 +11,8 @@
             './images/ic_arrow_back_white_24px.svg',
             './images/ic_cancel_white_24px.svg',
             './images/ic_done_white_24px.svg',
-            './images/ic_edit_white_24px.svg',
-            './images/ic_help_white_24px.svg'
+            './images/ic_menu_white_24px.svg',
+            './images/ic_more_vert_white_24px.svg'
         ];
 
     self.addEventListener('install', function (event) {

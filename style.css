@@ -77,7 +77,12 @@ li {
     margin: 0;
     outline: none;
     padding: 0;
+    transition: background-color 0.5s;
     width: 44px;
+}
+
+#leftBarButton:hover, #rightBarButton:hover {
+    background-color: #c43;
 }
 
 #leftBarButton {
@@ -87,7 +92,57 @@ li {
 
 #mainSection {
     flex: 1;
-    padding-top: 44px;
+    margin-top: 44px;
+    position: relative;
+}
+
+#menuContainer {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 200px;
+}
+
+#menuHome, #menuView {
+    margin: 0;
+    padding: 0;
+    position: fixed;
+    width: 200px;
+}
+
+#menuHome {
+    background: #333;
+    height: 100%;
+    top: 44px;
+}
+
+#menuHome li, #menuView li {
+    margin: 0;
+    padding: 0;
+}
+
+#menuHome a, #menuView a {
+    color: #fff;
+    display: block;
+    padding: 16px;
+    text-decoration: none;
+    transition: background-color 0.5s;
+}
+
+#menuHome a {
+    background: #333;
+}
+
+#menuHome a:hover {
+    background: #666;
+}
+
+#menuView a {
+    background: #f76;
+}
+
+#menuView a:hover {
+    background: #c43;
 }
 
 #rightBarButton {
@@ -107,6 +162,12 @@ li {
     text-overflow: ellipsis;
     width: calc(50% - 8px);
     white-space: pre-line;
+}
+
+@media only print {
+    #header {
+        display: none;
+    }
 }
 
 @media only screen and (min-width: 400px) {
