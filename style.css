@@ -5,15 +5,13 @@ body {
     color: #333;
     font: 1em 'helvetica', 'arial', sans-serif;
     margin: 0;
+    overflow: hidden;
     padding: 0;
 }
 
 main {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    margin: 0 auto;
-    max-width: 960px;
+    height: calc(100vh - 44px);
+    overflow: scroll;
 }
 
 ul {
@@ -28,7 +26,7 @@ li {
     padding: 0.5em;
 }
 
-#about, #content {
+#about, #content, #options {
     background: #fff;
     padding: 1em;
 }
@@ -60,10 +58,10 @@ li {
     background: #f76;
     border-bottom: 1px solid #c33;
     color: #fff;
-    height: 44px;
+    height: 42px;
+    margin: 0 auto;
     max-width: 960px;
-    position: fixed;
-    width: 100%;
+    padding: 1px;
 }
 
 #header h1 {
@@ -78,21 +76,22 @@ li {
     outline: none;
     padding: 0;
     transition: background-color 0.5s;
-    width: 44px;
+    width: 42px;
 }
 
-#leftBarButton:hover, #rightBarButton:hover {
+#leftBarButton:active, #rightBarButton:active {
     background-color: #c43;
 }
 
 #leftBarButton {
-    background: url('images/ic_help_white_24px.svg') no-repeat center center;
+    background: url('images/ic_menu_white_24px.svg') no-repeat center center;
     float: left;
 }
 
 #mainSection {
-    flex: 1;
-    margin-top: 44px;
+    height: 100%;
+    margin: 0 auto;
+    max-width: 960px;
     position: relative;
 }
 
@@ -133,7 +132,7 @@ li {
     background: #333;
 }
 
-#menuHome a:hover {
+#menuHome a:active {
     background: #666;
 }
 
@@ -141,7 +140,7 @@ li {
     background: #f76;
 }
 
-#menuView a:hover {
+#menuView a:active {
     background: #c43;
 }
 
@@ -160,8 +159,14 @@ li {
     overflow: hidden;
     padding: 8px;
     text-overflow: ellipsis;
+    transition: background-color 0.5s;
+    user-select: none;
     width: calc(50% - 8px);
     white-space: pre-line;
+}
+
+.collectionItem:active {
+    background: #eee;
 }
 
 @media only print {

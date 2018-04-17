@@ -8,6 +8,7 @@
         content,
         currentNote = 0,
         currentPage = 0,
+        demoText = '[日]（ひ）\n[日](ひ)\n日（ひ）\n日(ひ)',
         editContainer,
         editTextarea,
         leftBarButton,
@@ -108,6 +109,10 @@
         }
         currentNote = notes.length;
         window.location.hash = 'edit';
+    }
+
+    function getRubyHtmlFrom(text) {
+        return '<p>' + text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(replaceRegExp, replaceResult).replace(/\n/g, '&nbsp;</p><p>') + '</p>';
     }
 
     function noteDelete(evt) {
@@ -217,21 +222,26 @@
     }
 
     function setOptions() {
-        var evens = [],
+        var data = localStorage.getItem('options'),
+            evens = [],
             i,
             l,
             odds = [],
             regexOptions = [];
-        options = localStorage.getItem('options');
 
-        if (options === null) {
+        if (data === null) {
             options = {
                 bracketsFullWidthParenthesis: true,
                 bracketsParenthesis: true,
                 fullWidthParenthesis: true,
+                lineHeight: '1.2',
                 parenthesis: true
             };
+        } else {
+            options = JSON.parse(data);
         }
+
+        content.style.lineHeight = options.lineHeight;
 
         if (options.fullWidthParenthesis) {
             regexOptions.push(replaceOptionFullWidthParenthesis);
@@ -270,7 +280,113 @@
     }
 
     function setPageOptions() {
-        //
+        var button,
+            demoTextDiv,
+            input,
+            label,
+            paragraph;
+
+        input = document.createElement('input');
+        input.setAttribute('type', 'checkbox');
+        input.checked = options.bracketsFullWidthParenthesis;
+        input.addEventListener('change', function (evt) {
+            options.bracketsFullWidthParenthesis = evt.target.checked;
+            localStorage.setItem('options', JSON.stringify(options));
+            setOptions();
+            demoTextDiv.innerHTML = getRubyHtmlFrom(demoText);
+        });
+        label = document.createElement('label');
+        label.textContent = ' Set furigana for text in brackets with text in full width parenthesis. [日]（ひ）';
+        label.insertBefore(input, label.firstChild);
+        paragraph = document.createElement('p');
+        paragraph.appendChild(label);
+        pageOptions.appendChild(paragraph);
+
+        input = document.createElement('input');
+        input.setAttribute('type', 'checkbox');
+        input.checked = options.bracketsParenthesis;
+        input.addEventListener('change', function (evt) {
+            options.bracketsParenthesis = evt.target.checked;
+            localStorage.setItem('options', JSON.stringify(options));
+            setOptions();
+            demoTextDiv.innerHTML = getRubyHtmlFrom(demoText);
+        });
+        label = document.createElement('label');
+        label.textContent = ' Set furigana for text in brackets with text in parenthesis. [日](ひ)';
+        label.insertBefore(input, label.firstChild);
+        paragraph = document.createElement('p');
+        paragraph.appendChild(label);
+        pageOptions.appendChild(paragraph);
+
+        input = document.createElement('input');
+        input.setAttribute('type', 'checkbox');
+        input.checked = options.fullWidthParenthesis;
+        input.addEventListener('change', function (evt) {
+            options.fullWidthParenthesis = evt.target.checked;
+            localStorage.setItem('options', JSON.stringify(options));
+            setOptions();
+            demoTextDiv.innerHTML = getRubyHtmlFrom(demoText);
+        });
+        label = document.createElement('label');
+        label.textContent = ' Set furigana for any character with text in full width parenthesis. 日（ひ）';
+        label.insertBefore(input, label.firstChild);
+        paragraph = document.createElement('p');
+        paragraph.appendChild(label);
+        pageOptions.appendChild(paragraph);
+
+        input = document.createElement('input');
+        input.setAttribute('type', 'checkbox');
+        input.checked = options.parenthesis;
+        input.addEventListener('change', function (evt) {
+            options.parenthesis = evt.target.checked;
+            localStorage.setItem('options', JSON.stringify(options));
+            setOptions();
+            demoTextDiv.innerHTML = getRubyHtmlFrom(demoText);
+        });
+        label = document.createElement('label');
+        label.textContent = ' Set furigana for any character with text in parenthesis. 日(ひ)';
+        label.insertBefore(input, label.firstChild);
+        paragraph = document.createElement('p');
+        paragraph.appendChild(label);
+        pageOptions.appendChild(paragraph);
+
+        input = document.createElement('input');
+        input.setAttribute('type', 'number');
+        input.value = options.lineHeight;
+        input.setAttribute('min', '0');
+        input.setAttribute('max', '2');
+        input.setAttribute('step', '0.1');
+        input.addEventListener('input', function (evt) {
+            if (!isNaN(evt.target.value)) {
+                options.lineHeight = evt.target.value;
+                demoTextDiv.style.lineHeight = options.lineHeight;
+                content.style.lineHeight = options.lineHeight;
+                localStorage.setItem('options', JSON.stringify(options));
+            }
+        });
+        label = document.createElement('label');
+        label.textContent = ' Space between lines';
+        label.insertBefore(input, label.firstChild);
+        paragraph = document.createElement('p');
+        paragraph.appendChild(label);
+        pageOptions.appendChild(paragraph);
+
+        demoTextDiv = document.createElement('div');
+        demoTextDiv.innerHTML = getRubyHtmlFrom(demoText);
+        demoTextDiv.style.background = '#eee';
+        demoTextDiv.style.border = '1px dotted #ccc';
+        demoTextDiv.style.lineHeight = options.lineHeight;
+        demoTextDiv.style.padding = '1em';
+        pageOptions.appendChild(demoTextDiv);
+
+        button = document.createElement('button');
+        button.setAttribute('type', 'button');
+        button.textContent = 'Reset all to default';
+        button.addEventListener('click', function () {
+            localStorage.removeItem('options');
+            window.location.reload();
+        });
+        pageOptions.appendChild(button);
     }
 
     function onHashChange() {
@@ -355,7 +471,7 @@
                 }
             }
             if (currentNote < notes.length && notes[currentNote].length > 0) {
-                content.innerHTML = '<p>' + notes[currentNote].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(replaceRegExp, replaceResult).replace(/\n/g, '&nbsp;</p><p>') + '</p>';
+                content.innerHTML = getRubyHtmlFrom(notes[currentNote]);
             } else {
                 window.history.back();
             }

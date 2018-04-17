@@ -2,7 +2,7 @@
 /*jslint es5: true*/
 (function (self, undefined) {
     'use strict';
-    var CACHE_VERSION = '1.0.2',
+    var CACHE_VERSION = '1.0.3',
         cachePaths = [
             './',
             './style.css',
