@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+
+## [1.1.0] - 2018-05-15
+### Added
+- Sync notes with Google Drive.
+
 ## [1.0.3] - 2018-04-16
 ### Added
 - Options to customize the app behavior.

@@ -2,11 +2,12 @@
 /*jslint es5: true*/
 (function (self, undefined) {
     'use strict';
-    var CACHE_VERSION = '1.0.3',
+    var CACHE_VERSION = '1.1.0',
         cachePaths = [
             './',
             './style.css',
             './script.js',
+            './drive-manager.js',
             './images/ic_add_white_24px.svg',
             './images/ic_arrow_back_white_24px.svg',
             './images/ic_cancel_white_24px.svg',

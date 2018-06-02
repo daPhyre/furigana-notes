@@ -8,16 +8,19 @@
         content,
         currentNote = 0,
         currentPage = 0,
+        deletedNotes = [],
         demoText = '[日]（ひ）\n[日](ひ)\n日（ひ）\n日(ひ)',
         editContainer,
         editTextarea,
         leftBarButton,
+        loader,
         mainSection,
         menuContainer,
         menuHome,
         menuView,
         notes = [],
         options,
+        pageProfile,
         pageOptions,
         replaceRegExp,
         replaceResult,
@@ -31,11 +34,12 @@
         PAGE_HOME = 0,
         PAGE_VIEW = 1,
         PAGE_EDIT = 2,
-        PAGE_OPTIONS = 3,
-        PAGE_ABOUT = 4;
+        PAGE_PROFILE = 3,
+        PAGE_OPTIONS = 4,
+        PAGE_ABOUT = 5;
 
+    // Actions for left button.
     function leftBarButtonPressed() {
-        // Actions for left button.
         switch (currentPage) {
         case PAGE_HOME:
             // On home, opens or closes the side menu, if current page is not about (on zero notes).
@@ -57,6 +61,10 @@
             // On view, goes back to home.
             window.history.back();
             break;
+        case PAGE_PROFILE:
+            // On profile, goes back to home.
+            window.history.back();
+            break;
         case PAGE_OPTIONS:
             // On options, goes back to home.
             window.history.back();
@@ -68,8 +76,8 @@
         }
     }
 
+    // Actions for right button.
     function rightBarButtonPressed() {
-        // Actions for right button.
         switch (currentPage) {
         case PAGE_HOME:
             // On home, opens a new note for edition.
@@ -88,6 +96,9 @@
                 menuView.style.display = '';
             }
             break;
+        case PAGE_PROFILE:
+            // On profile, does nothing.
+            break;
         case PAGE_OPTIONS:
             // On options, does nothing.
             break;
@@ -97,41 +108,94 @@
         }
     }
 
+    // Syncs if network is available
+    function syncIfPossible(oneWay) {
+        if (navigator.onLine && (options.celullarSync || !(navigator.connection && navigator.connection.type === 'cellular'))) {
+            loader.style.display = '';
+            window.console.log('Syncing…');
+            window.driveManager.sync(oneWay);
+        }
+    }
+
+    // Opens current note for edition.
     function editCurrentNote() {
-        // Opens current note for edition.
         window.location.hash = 'edit';
     }
 
-    function firstNote(evt) {
-        // Opens a new note for edit and removes the button that invoked this action.
-        if (evt !== undefined) {
-            evt.target.parentElement.removeChild(evt.target);
+    // Opens the login page for edit and removes first time buttons.
+    function firstLogin() {
+        var firstTimeButtons = document.getElementById('firstTimeButtons');
+        if (firstTimeButtons !== null) {
+            firstTimeButtons.parentElement.removeChild(firstTimeButtons);
+        }
+        window.location.hash = 'profile';
+    }
+
+    // Opens a new note for edit and removes first time buttons.
+    function firstNote() {
+        var firstTimeButtons = document.getElementById('firstTimeButtons');
+        if (firstTimeButtons !== null) {
+            firstTimeButtons.parentElement.removeChild(firstTimeButtons);
         }
         currentNote = notes.length;
         window.location.hash = 'edit';
     }
 
+    // Transforms text into HTML with ruby markup
     function getRubyHtmlFrom(text) {
         return '<p>' + text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(replaceRegExp, replaceResult).replace(/\n/g, '&nbsp;</p><p>') + '</p>';
     }
 
+    // Loads saved notes
+    function loadSavedNotes() {
+        var jsonNotes = localStorage.getItem('data'),
+            jsonDeletedNotes = localStorage.getItem('pendingDelete'),
+            i,
+            l;
+
+        if (jsonDeletedNotes !== null) {
+            deletedNotes = JSON.parse(jsonDeletedNotes);
+            window.console.log('deletedNotes', deletedNotes);
+        }
+
+        if (jsonNotes !== null) {
+            notes = JSON.parse(jsonNotes);
+            window.console.log('notes', notes);
+            // Update users with older data format
+            if (notes.length > 0 && typeof notes[0] === 'string') {
+                window.console.log('Older data format; updating…');
+                for (i = 0, l = notes.length; i < l; i += 1) {
+                    if (typeof notes[i] === 'string') {
+                        notes[i] = {id: (Date.now() + i).toString(36), content: notes[i]};
+                    }
+                }
+                window.console.log(notes);
+                localStorage.setItem('data', JSON.stringify(notes));
+            }
+        }
+    }
+
+    // Deletes current note if confirmed.
     function noteDelete(evt) {
-        // Deletes current note if confirmed.
         if (evt !== undefined) {
             evt.preventDefault();
         }
         menuView.style.display = 'none';
         if (window.confirm('Delete this note?')) {
-            notes.splice(currentNote, 1);
-            localStorage.setItem('data', JSON.stringify(notes));
+            var note = notes.splice(currentNote, 1)[0];
+            if (note.fileId !== undefined) {
+                deletedNotes.push(note.fileId);
+                localStorage.setItem('pendingDelete', JSON.stringify(deletedNotes));
+                syncIfPossible(true);
+            }
             window.history.back();
         }
     }
 
     /*
     // REMOVED: jsPDF doesn't supports ruby mark correctly yet. Code left for future possible implementation.
+    // Creates a PDF document for download with the current note content.
     function noteDownloadAsPdf(evt) {
-        // Creates a PDF document for download with the current note content.
         if (evt !== undefined) {
             evt.preventDefault();
         }
@@ -142,8 +206,8 @@
     }
     */
 
+    // Opens print dialog for current note.
     function notePrint(evt) {
-        // Opens print dialog for current note.
         if (evt !== undefined) {
             evt.preventDefault();
         }
@@ -151,18 +215,26 @@
         window.print();
     }
 
+    // Opens selected note for viewing.
     function noteView(evt) {
-        // Opens selected note for viewing.
         currentNote = evt.target.index;
         window.location.hash = 'view';
     }
 
+    // Creates the side menu at home
     function setMenuHome() {
         var anchor,
             li;
 
         menuHome = document.createElement('ul');
         menuHome.setAttribute('id', 'menuHome');
+
+        anchor = document.createElement('a');
+        anchor.setAttribute('href', '#profile');
+        anchor.textContent = 'Sync notes';
+        li = document.createElement('li');
+        li.append(anchor);
+        menuHome.append(li);
 
         anchor = document.createElement('a');
         anchor.setAttribute('href', '#options');
@@ -179,6 +251,7 @@
         menuHome.append(li);
     }
 
+    // Creates the options menu at view
     function setMenuView() {
         var anchor,
             li;
@@ -221,6 +294,7 @@
         */
     }
 
+    // Sets the customizable options
     function setOptions() {
         var data = localStorage.getItem('options'),
             evens = [],
@@ -230,14 +304,17 @@
             regexOptions = [];
 
         if (data === null) {
+            // Sets initial options if none
             options = {
                 bracketsFullWidthParenthesis: true,
                 bracketsParenthesis: true,
+                celullarSync: false,
                 fullWidthParenthesis: true,
                 lineHeight: '1.2',
                 parenthesis: true
             };
         } else {
+            // Obtains options from local storage
             options = JSON.parse(data);
         }
 
@@ -261,6 +338,7 @@
         }
 
         if (regexOptions.length > 0) {
+            // Generate the regex for user's settings
             for (i = 0, l = regexOptions.length; i < l; i += 1) {
                 odds.push(String(i * 2 + 1));
                 evens.push(String(i * 2 + 2));
@@ -272,6 +350,7 @@
             replaceRegExp = new RegExp(regexOptions.join('|'), 'g');
             replaceResult = '<ruby>$1<rp>(</rp><rt>$2</rt><rp>)</rp></ruby>'.replace('$1', '$' + odds.join('$')).replace('$2', '$' + evens.join('$'));
         } else {
+            // Clear the regex
             replaceRegExp = '';
             replaceResult = '';
         }
@@ -279,12 +358,28 @@
         //window.console.log(replaceRegExp, replaceResult);
     }
 
+    // Creates the page for user customizable options
     function setPageOptions() {
         var button,
             demoTextDiv,
             input,
             label,
             paragraph;
+
+        input = document.createElement('input');
+        input.setAttribute('type', 'checkbox');
+        input.checked = options.celullarSync;
+        input.addEventListener('change', function (evt) {
+            options.celullarSync = evt.target.checked;
+            localStorage.setItem('options', JSON.stringify(options));
+            setOptions();
+        });
+        label = document.createElement('label');
+        label.textContent = ' Sync also with my mobile data (only WiFi by default).';
+        label.insertBefore(input, label.firstChild);
+        paragraph = document.createElement('p');
+        paragraph.appendChild(label);
+        pageOptions.appendChild(paragraph);
 
         input = document.createElement('input');
         input.setAttribute('type', 'checkbox');
@@ -389,11 +484,21 @@
         pageOptions.appendChild(button);
     }
 
+    // Checks for connection change to sync any pending data
+    function onConnectionChange() {
+        window.console.log('Connection changed. Attempting to sync…');
+        syncIfPossible();
+    }
+
+    // Checks for changes on URL hash
     function onHashChange() {
         var button,
             collectionItem,
+            div,
             i,
-            l;
+            l,
+            note,
+            paragraph;
 
         menuHome.style.display = 'none';
         menuView.style.display = 'none';
@@ -405,6 +510,7 @@
             content.style.display = 'none';
             editContainer.style.display = 'none';
             pageOptions.style.display = 'none';
+            pageProfile.style.display = 'none';
 
             leftBarButton.title = 'Back';
             leftBarButton.style.backgroundImage = 'url("images/ic_arrow_back_white_24px.svg")';
@@ -413,8 +519,9 @@
             break;
         case '#edit':
             if (currentPage !== PAGE_EDIT) {
-                if (currentNote < notes.length && notes[currentNote].length > 0) {
-                    editTextarea.value = notes[currentNote];
+                // If edition was canceled, current page will remain the same; if not, set edit text area:
+                if (currentNote < notes.length && notes[currentNote].content.length > 0) {
+                    editTextarea.value = notes[currentNote].content;
                 } else {
                     editTextarea.value = '';
                 }
@@ -425,6 +532,7 @@
             content.style.display = 'none';
             editContainer.style.display = '';
             pageOptions.style.display = 'none';
+            pageProfile.style.display = 'none';
 
             leftBarButton.title = 'Cancel';
             leftBarButton.style.backgroundImage = 'url("images/ic_cancel_white_24px.svg")';
@@ -434,12 +542,27 @@
             editTextarea.focus();
             break;
         case '#options':
-            currentPage = PAGE_ABOUT;
+            currentPage = PAGE_OPTIONS;
             about.style.display = 'none';
             collectionView.style.display = 'none';
             content.style.display = 'none';
             editContainer.style.display = 'none';
             pageOptions.style.display = '';
+            pageProfile.style.display = 'none';
+
+            leftBarButton.title = 'Back';
+            leftBarButton.style.backgroundImage = 'url("images/ic_arrow_back_white_24px.svg")';
+            rightBarButton.title = '';
+            rightBarButton.style.backgroundImage = 'none';
+            break;
+        case '#profile':
+            currentPage = PAGE_PROFILE;
+            about.style.display = 'none';
+            collectionView.style.display = 'none';
+            content.style.display = 'none';
+            editContainer.style.display = 'none';
+            pageOptions.style.display = 'none';
+            pageProfile.style.display = '';
 
             leftBarButton.title = 'Back';
             leftBarButton.style.backgroundImage = 'url("images/ic_arrow_back_white_24px.svg")';
@@ -448,9 +571,10 @@
             break;
         case '#view':
             if (currentPage === PAGE_EDIT) {
+                // Comming from note edition
                 if (cancelEdit) {
                     cancelEdit = false;
-                    if (notes[currentNote].length !== editTextarea.value.length) {
+                    if (notes[currentNote].content.length !== editTextarea.value.length) {
                         if (!window.confirm('Exit without save?')) {
                             window.location.hash = 'edit';
                             return;
@@ -458,20 +582,31 @@
                     }
                 } else {
                     if (editTextarea.value.length > 0) {
-                        notes.splice(currentNote, 1);
-                        notes.unshift(editTextarea.value);
+                        if (currentNote < notes.length) {
+                            note = notes.splice(currentNote, 1)[0];
+                            note.content = editTextarea.value;
+                            note.lastUpdate = Date.now();
+                            notes.unshift(note);
+                        } else {
+                            notes.unshift({id: Date.now().toString(36), content: editTextarea.value});
+                        }
                         currentNote = 0;
                         localStorage.setItem('data', JSON.stringify(notes));
+                        syncIfPossible(true);
                     } else if (window.confirm('Delete this note?')) {
-                        notes.splice(currentNote, 1);
-                        localStorage.setItem('data', JSON.stringify(notes));
+                        note = notes.splice(currentNote, 1)[0];
+                        if (note.fileId !== undefined) {
+                            deletedNotes.push(note.fileId);
+                            localStorage.setItem('pendingDelete', JSON.stringify(deletedNotes));
+                            syncIfPossible(true);
+                        }
                         window.history.back();
                         return;
                     }
                 }
             }
-            if (currentNote < notes.length && notes[currentNote].length > 0) {
-                content.innerHTML = getRubyHtmlFrom(notes[currentNote]);
+            if (currentNote < notes.length && notes[currentNote].content.length > 0) {
+                content.innerHTML = getRubyHtmlFrom(notes[currentNote].content);
             } else {
                 window.history.back();
             }
@@ -481,6 +616,7 @@
             content.style.display = '';
             editContainer.style.display = 'none';
             pageOptions.style.display = 'none';
+            pageProfile.style.display = 'none';
 
             leftBarButton.title = 'Back';
             leftBarButton.style.backgroundImage = 'url("images/ic_arrow_back_white_24px.svg")';
@@ -489,6 +625,7 @@
             break;
         default:
             if (currentPage === PAGE_EDIT) {
+                // Comming from first note
                 if (cancelEdit) {
                     cancelEdit = false;
                     if (!window.confirm('Exit without save?')) {
@@ -496,9 +633,10 @@
                         return;
                     }
                 } else if (editTextarea.value.length > 0) {
-                    notes.unshift(editTextarea.value);
+                    notes.unshift({id: Date.now().toString(36), content: editTextarea.value});
                     currentNote = 0;
                     localStorage.setItem('data', JSON.stringify(notes));
+                    syncIfPossible(true);
                     window.location.hash = 'view';
                 }
             }
@@ -508,6 +646,7 @@
             content.style.display = 'none';
             editContainer.style.display = 'none';
             pageOptions.style.display = 'none';
+            pageProfile.style.display = 'none';
 
             leftBarButton.title = 'About';
             leftBarButton.style.backgroundImage = 'url("images/ic_menu_white_24px.svg")';
@@ -523,7 +662,7 @@
                     collectionItem.index = i;
                     collectionItem.addEventListener('click', noteView);
                     collectionItem.classList.add('collectionItem');
-                    collectionItem.textContent = notes[i];
+                    collectionItem.textContent = notes[i].content;
                     collectionView.appendChild(collectionItem);
                 }
             } else {
@@ -531,46 +670,67 @@
                 leftBarButton.style.backgroundImage = 'none';
 
                 about.style.display = '';
-                if (document.getElementById('firstNote') === null) {
+                if (document.getElementById('firstTimeButtons') === null) {
+                    div = document.createElement('div');
+                    div.setAttribute('id', 'firstTimeButtons');
+
                     button = document.createElement('button');
                     button.addEventListener('click', firstNote);
-                    button.setAttribute('id', 'firstNote');
                     button.setAttribute('type', 'button');
                     button.textContent = 'Create your first note!';
-                    about.appendChild(button);
+                    paragraph = document.createElement('p');
+                    paragraph.appendChild(button);
+                    div.appendChild(paragraph);
+
+                    paragraph = document.createElement('p');
+                    paragraph.textContent = ' - or - ';
+                    div.appendChild(paragraph);
+
+                    button = document.createElement('button');
+                    button.addEventListener('click', firstLogin);
+                    button.setAttribute('type', 'button');
+                    button.textContent = 'Login to sync your notes';
+                    paragraph = document.createElement('p');
+                    paragraph.appendChild(button);
+                    div.appendChild(paragraph);
+
+                    about.appendChild(div);
                 }
             }
         }
     }
 
+    // Initializes data on page load
     function onLoad() {
-        var data = localStorage.getItem('data'),
-            preload = document.getElementById('preload');
+        var preload = document.getElementById('preload');
 
+        loadSavedNotes();
+
+        // Setup page elements.
         about = document.getElementById('about');
         collectionView = document.createElement('div');
         content = document.createElement('div');
         editContainer = document.createElement('div');
         editTextarea = document.createElement('textarea');
         leftBarButton = document.getElementById('leftBarButton');
+        loader = document.createElement('div');
         mainSection = document.getElementById('mainSection');
         menuContainer = document.createElement('div');
         pageOptions = document.createElement('div');
+        pageProfile = window.driveManager.getAuthView();
         rightBarButton = document.getElementById('rightBarButton');
 
         setOptions();
-
-        if (data !== null) {
-            notes = JSON.parse(data);
-        }
 
         content.setAttribute('id', 'content');
         editContainer.setAttribute('id', 'editContainer');
         editTextarea.setAttribute('id', 'editTextarea');
         editTextarea.setAttribute('placeholder', '振（ふ）り仮（が）名（な）\n[日](に)[本](ほん)[語](ご)');
         collectionView.setAttribute('id', 'collectionView');
+        loader.setAttribute('id', 'loader');
         menuContainer.setAttribute('id', 'menuContainer');
         pageOptions.setAttribute('id', 'options');
+        pageProfile.setAttribute('id', 'profile');
 
         preload.parentElement.removeChild(preload);
         editContainer.appendChild(editTextarea);
@@ -579,6 +739,7 @@
         mainSection.appendChild(collectionView);
         mainSection.appendChild(menuContainer);
         mainSection.append(pageOptions);
+        mainSection.append(pageProfile);
 
         setMenuHome();
         mainSection.appendChild(menuHome);
@@ -588,10 +749,35 @@
 
         setPageOptions();
 
+        // Append loader at the end
+        loader.style.display = 'none';
+        mainSection.appendChild(loader);
+
+        // Add listeners to buttons
         content.addEventListener('dblclick', editCurrentNote);
         leftBarButton.addEventListener('click', leftBarButtonPressed);
         rightBarButton.addEventListener('click', rightBarButtonPressed);
 
+        // Set drive manager callbacks
+        window.driveManager.onSignIn = function () {
+            if (currentPage === PAGE_PROFILE) {
+                window.history.back();
+            }
+        };
+
+        window.driveManager.onSyncFinished = function () {
+            window.console.log('Sync done. Refreshing');
+            loader.style.display = 'none';
+            loadSavedNotes();
+
+            if (currentPage === PAGE_HOME) {
+                // Refresh home screen
+                window.console.log('Refreshing home screen');
+                onHashChange();
+            }
+        };
+
+        // Service worker for app cache.
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js').then(function (registration) {
                 window.console.log('ServiceWorker registration successful with scope: ', registration.scope);
@@ -602,8 +788,18 @@
             window.console.log('ServiceWorker not supported');
         }
 
+        // Hash change for page navigation.
         window.addEventListener('hashchange', onHashChange);
         onHashChange();
+
+        // Navigator connection for file sync.
+        if (navigator.connection) {
+            navigator.connection.addEventListener('change', onConnectionChange);
+        } else {
+            window.addEventListener('online', onConnectionChange);
+            window.addEventListener('offline', onConnectionChange);
+        }
+        onConnectionChange();
     }
 
     window.addEventListener('load', onLoad);

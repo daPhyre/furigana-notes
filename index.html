@@ -40,14 +40,20 @@
                     <blockquote>
                         <p><ruby>日<rp>(</rp><rt>に</rt><rp>)</rp></ruby><ruby>本<rp>(</rp><rt>ほん</rt><rp>)</rp></ruby><ruby>語<rp>(</rp><rt>ご</rt><rp>)</rp></ruby></p>
                     </blockquote>
-                </div>
-                <div id="preload">
-                    <script type="application/javascript">document.write('<p>Loading...</p>');</script>
-                    <noscript><p>Javascript not detected. Please activate to use this application.</p></noscript>
+                    <div id="preload">
+                        <script type="application/javascript">document.write('<p>Loading...</p>');</script>
+                        <noscript><p>Javascript not detected. Please activate to use this application.</p></noscript>
+                    </div>
                 </div>
             </section>
         </main>
 
+        <script type="application/javascript" src="drive-manager.js"></script>
         <script type="application/javascript" src="script.js"></script>
+
+        <script async defer src="https://apis.google.com/js/api.js"
+                onload="this.onload=function(){};driveManager.init()"
+                onreadystatechange="if (this.readyState === 'complete') this.onload()">
+        </script>
     </body>
 </html>

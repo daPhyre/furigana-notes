@@ -26,7 +26,7 @@ li {
     padding: 0.5em;
 }
 
-#about, #content, #options {
+#about, #content, #options, #profile {
     background: #fff;
     padding: 1em;
 }
@@ -86,6 +86,15 @@ li {
 #leftBarButton {
     background: url('images/ic_menu_white_24px.svg') no-repeat center center;
     float: left;
+}
+
+#loader {
+    background: url('images/ic_loading_48px.svg') no-repeat center center;
+    height: 64px;
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 64px;
 }
 
 #mainSection {
